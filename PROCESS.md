@@ -1,9 +1,5 @@
 # Process overview
 
-<!-- TEMPLATE: this file is a shape to fill in, not a form. Replace everything
-     in it with your own overview, and delete this comment — `pnpm
-     check:evidence` will remind you if it's still here. -->
-
 Written by you, for a reader: how you got from the brief to the harness and
 agentic workflow behind this submission. Markers read this file and follow its
 citations; they don't trawl the repo for evidence you didn't point at.
@@ -16,32 +12,44 @@ cover every deliverable.
 
 ## What I built
 
-A sentence or two. `README.md` is where the account of what the app is and what
-good means here lives; this file is how you got there.
+A tutorial/lab swap board: post the slot you have and what you'd swap it for,
+someone else claims it, and the board updates live in every open tab. Full
+stack — Astro, Drizzle, SQLite — deployed to Fly. `README.md` has the fuller
+account of what good looks like here.
 
 ## How I got here
 
-The account of the process: how the work actually went, and how you knew the
-result was right. Tell it in whatever order makes it clear. A weekly prototype
-needs a paragraph or two; an assignment needs more.
+Carried the harness forward from last week's assignment repo
+([`e1e1aa4`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/e1e1aa4)):
+kept the rules that generalize (commit at the grain of a decision, cite
+commits as they land, platform constraints beat literal requests), dropped
+what was specific to that assignment's static-site content model, and
+reworded the stack-specific ones (the dev-server-lies-about-status-codes note,
+the hash-diff-isn't-a-visual-check note) for a server-rendered app on Fly
+instead of a GitHub Pages site.
 
-Cite the record as you go, as links whose text is the commit hash or range and
-whose target is this repo's commit or compare URL, so a reader clicks straight
-to the evidence:
+Picked the swap board from a shortlist (room booking, a tutorial waitlist, a
+course-selection shortlist, a deliverable tracker) as the one with the most
+real relational bite for a single day's build.
 
-- one commit: [`a1b2c3d`](https://github.com/YOUR-ORG/YOUR-REPO/commit/a1b2c3d)
-- a range:
-  [`a1b2c3d...e4f5a6b`](https://github.com/YOUR-ORG/YOUR-REPO/compare/a1b2c3d...e4f5a6b)
+Built it as the same shape as the starter's guestbook — create, persist,
+reload, live SSE broadcast — plus one more state transition: claiming. The
+actual design decision was making a claim exclusive: `claimSwap` only updates
+a row where `claimed_by` is still null, so two people claiming the same swap
+in the same instant can't both win. I didn't just read the code and trust it —
+I posted a swap, claimed it as one name, then immediately attempted a second
+claim as a different name against the same id. The second attempt still
+redirected 303, but the board kept showing the first claim, which is what
+actually proves the guard holds rather than just type-checks.
 
-To pair a prompt with the commit it produced, quote the prompt (curated, not a
-full transcript) next to the citation:
+[`9eacf18`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/9eacf18)
+is the whole feature: schema and migration, the two API routes (create,
+claim), the board UI with live updates, and `spec/swaps.test.ts` (replacing
+`spec/guestbook.test.ts`), asserting the brief's two checkable lines — a
+posted swap persists across a reload, and a claim persists too.
 
-> the prompt, verbatim
-
-Screenshots are welcome where one carries the point better than a sentence does.
-Commit the file to this repo and link it with a **relative** path, which is what
-makes it render on GitHub: `![alt text](docs/before.png)`. Images don't count
-towards the word count and don't replace the citation.
+`pnpm check` is green: typecheck, build, and the full spec suite, including
+the shipped invariants and the new spec tests.
 
 ## Before you ship
 
