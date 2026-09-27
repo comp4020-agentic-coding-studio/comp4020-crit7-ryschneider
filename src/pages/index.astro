@@ -1,8 +1,8 @@
 ---
-import { listMessages } from "../lib/db";
+import { listSwaps } from "../lib/db";
 import "../styles.css";
 
-const messages = listMessages();
+const swaps = listSwaps();
 ---
 
 <!doctype html>
@@ -10,43 +10,130 @@ const messages = listMessages();
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>COMP4020 prototype</title>
+    <title>Tutorial swap board</title>
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Guestbook</a>
+      <a href="/">Swap board</a>
       <a href="/readme/">About</a>
     </nav>
     <main>
-      <h1>Guestbook</h1>
+      <h1>Tutorial &amp; lab swap board</h1>
       <p>
-        A minimal full-stack starter: messages live in SQLite on the machine's
-        volume (state survives a reload and a redeploy), and new messages
-        appear in every open tab over a server-sent-events stream — open this
-        page twice and sign it in one. Replace all of this with your own
-        prototype.
+        Post the tutorial or lab slot you have and what you'd swap it for.
+        Anyone else can claim it — once claimed, it's off the board for
+        everyone else. New and claimed swaps appear live in every open tab.
       </p>
-      <form method="post" action="/api/messages">
-        <label for="body">Leave a message</label>
-        <input id="body" name="body" required maxlength="500" />
-        <button>Sign</button>
+      <form method="post" action="/api/swaps">
+        <label for="name">Your name</label>
+        <input id="name" name="name" required maxlength="100" />
+        <label for="have">Slot you have</label>
+        <input
+          id="have"
+          name="have"
+          required
+          maxlength="200"
+          placeholder="COMP1100 Tut, Wed 10am"
+        />
+        <label for="want">Slot you want</label>
+        <input
+          id="want"
+          name="want"
+          required
+          maxlength="200"
+          placeholder="Anything Thursday"
+        />
+        <button>Post swap</button>
       </form>
-      <ul id="messages">
-        {messages.map((message) => <li>{message.body}</li>)}
+      <ul id="swaps">
+        {
+          swaps.map((swap) => (
+            <li data-swap-id={swap.id}>
+              <p>
+                <strong>{swap.name}</strong> has {swap.have} — wants {swap.want}
+              </p>
+              {swap.claimedBy ? (
+                <p class="claimed">claimed by {swap.claimedBy}</p>
+              ) : (
+                <form method="post" action={`/api/swaps/${swap.id}/claim`}>
+                  <label for={`claim-${swap.id}`}>Your name</label>
+                  <input
+                    id={`claim-${swap.id}`}
+                    name="claimedBy"
+                    required
+                    maxlength="100"
+                  />
+                  <button>Claim</button>
+                </form>
+              )}
+            </li>
+          ))
+        }
       </ul>
     </main>
     <script>
-      // The live half of the demo: subscribe to the SSE stream and prepend
-      // messages as they arrive. The form itself needs none of this — its
-      // POST + redirect re-renders the submitting tab from SQLite; this
-      // stream is how every other tab finds out.
-      const list = document.querySelector("#messages");
+      // The live half of the demo: subscribe to the SSE stream and update the
+      // board as swaps are posted or claimed. Each form itself needs none of
+      // this — its POST + redirect re-renders the submitting tab from
+      // SQLite; this stream is how every other tab finds out.
+      const list = document.querySelector("#swaps");
+
+      function renderSwap(swap: {
+        id: number;
+        name: string;
+        have: string;
+        want: string;
+        claimedBy: string | null;
+      }) {
+        const item = document.createElement("li");
+        item.dataset.swapId = String(swap.id);
+
+        const summary = document.createElement("p");
+        const name = document.createElement("strong");
+        name.textContent = swap.name;
+        summary.append(name, ` has ${swap.have} — wants ${swap.want}`);
+        item.append(summary);
+
+        if (swap.claimedBy) {
+          const claimed = document.createElement("p");
+          claimed.className = "claimed";
+          claimed.textContent = `claimed by ${swap.claimedBy}`;
+          item.append(claimed);
+        } else {
+          const form = document.createElement("form");
+          form.method = "post";
+          form.action = `/api/swaps/${swap.id}/claim`;
+
+          const label = document.createElement("label");
+          label.htmlFor = `claim-${swap.id}`;
+          label.textContent = "Your name";
+
+          const input = document.createElement("input");
+          input.id = `claim-${swap.id}`;
+          input.name = "claimedBy";
+          input.required = true;
+          input.maxLength = 100;
+
+          const button = document.createElement("button");
+          button.textContent = "Claim";
+
+          form.append(label, input, button);
+          item.append(form);
+        }
+
+        return item;
+      }
+
       const source = new EventSource("/api/events");
       source.addEventListener("message", (event) => {
-        const message = JSON.parse(event.data);
-        const item = document.createElement("li");
-        item.textContent = message.body;
-        list?.prepend(item);
+        const swap = JSON.parse(event.data);
+        const existing = list?.querySelector(`[data-swap-id="${swap.id}"]`);
+        const rendered = renderSwap(swap);
+        if (existing) {
+          existing.replaceWith(rendered);
+        } else {
+          list?.prepend(rendered);
+        }
       });
     </script>
   </body>

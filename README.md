@@ -1,18 +1,23 @@
-# Your prototype
+# Tutorial &amp; lab swap board
 
-<!-- TEMPLATE: this file is yours, and the deployed app publishes it in full at
-     /readme/ --- a visitor reads it before they touch the app, and so does the
-     marker. Replace everything in it, this comment included. -->
-
-What this is, in a paragraph: the thing, and what it's for.
+Every semester I end up wanting to swap a tutorial or lab slot with someone
+else in the class, and there's no ANU system for it — just ad hoc posts in a
+group chat that get buried. This is the slice I wish existed: post the slot
+you have and what you'd swap it for, anyone else claims it, and it's done.
 
 ## What good looks like here
 
-Say what good means for this app: what you decided, what you read or looked at
-while deciding, and what you chose not to build. The rules that decision
-produced live in `CLAUDE.md` and the checks that protect it live in `spec/`;
-this is the argument they came from, so say which parts of good are enforced and
-which are judgement calls.
+The two things that actually matter: a posted swap has to survive a reload
+(it's really in the database, not just on the page you posted it from), and
+a claim has to be exclusive — once someone claims a swap, nobody else can
+claim it too. Both are enforced: `spec/swaps.test.ts` drives the running app
+over HTTP and checks a posted swap persists and a claim persists, and
+`claimSwap` in `src/lib/db.ts` only updates a row that's still unclaimed
+(`WHERE claimed_by IS NULL`), so two people claiming the same swap at the
+same moment can't both win.
 
-Images go in `public/` and are linked relatively --- `![alt](public/before.png)`
---- which renders on GitHub and at `/readme/` alike.
+What's a judgement call, not a check: I kept it to one open list rather than
+building accounts, matching by course code, or letting a poster retract a
+swap — the smallest thing that's genuinely wired end to end (create, claim,
+persist, broadcast live to every open tab) beats a bigger half-built one.
+`CLAUDE.md` has the working rules this was built under.

@@ -1,10 +1,10 @@
 import { mkdirSync } from "node:fs";
 import { dirname } from "node:path";
 import Database from "better-sqlite3";
-import { desc } from "drizzle-orm";
+import { and, desc, eq, isNull } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/better-sqlite3";
 import { migrate } from "drizzle-orm/better-sqlite3/migrator";
-import { type Message, messages } from "./schema";
+import { type Swap, swaps } from "./schema";
 
 // One SQLite file is the app's whole persistent state. In production
 // fly.toml points DATABASE_PATH at the machine's volume (/data), which is
@@ -24,12 +24,24 @@ export const db = drizzle(client);
 // commit the migration it writes to drizzle/.
 migrate(db, { migrationsFolder: "./drizzle" });
 
-export type { Message };
+export type { Swap };
 
-export function listMessages(): Message[] {
-  return db.select().from(messages).orderBy(desc(messages.id)).limit(50).all();
+export function listSwaps(): Swap[] {
+  return db.select().from(swaps).orderBy(desc(swaps.id)).limit(50).all();
 }
 
-export function addMessage(body: string): Message {
-  return db.insert(messages).values({ body }).returning().get();
+export function addSwap(name: string, have: string, want: string): Swap {
+  return db.insert(swaps).values({ name, have, want }).returning().get();
+}
+
+// Only claims a swap that's still open (claimed_by is null): the WHERE
+// guards against two people claiming the same swap in the same instant.
+// Returns undefined if the swap was already claimed or doesn't exist.
+export function claimSwap(id: number, claimedBy: string): Swap | undefined {
+  return db
+    .update(swaps)
+    .set({ claimedBy })
+    .where(and(eq(swaps.id, id), isNull(swaps.claimedBy)))
+    .returning()
+    .get();
 }

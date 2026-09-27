@@ -1,11 +1,11 @@
 {
   "version": "6",
   "dialect": "sqlite",
-  "id": "accefc94-da7c-4f56-a4d9-14289689c2a6",
+  "id": "86ab3526-f41e-40f9-99cb-4bbb4af50c33",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "tables": {
-    "messages": {
-      "name": "messages",
+    "swaps": {
+      "name": "swaps",
       "columns": {
         "id": {
           "name": "id",
@@ -14,11 +14,32 @@
           "notNull": true,
           "autoincrement": true
         },
-        "body": {
-          "name": "body",
+        "name": {
+          "name": "name",
           "type": "text",
           "primaryKey": false,
           "notNull": true,
+          "autoincrement": false
+        },
+        "have": {
+          "name": "have",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "want": {
+          "name": "want",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true,
+          "autoincrement": false
+        },
+        "claimed_by": {
+          "name": "claimed_by",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false,
           "autoincrement": false
         },
         "created_at": {
