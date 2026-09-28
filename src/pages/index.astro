@@ -1,5 +1,6 @@
 ---
 import { listSwaps } from "../lib/db";
+import { COURSES, courseLabel } from "../lib/catalog";
 import "../styles.css";
 
 const swaps = listSwaps();
@@ -14,48 +15,93 @@ const swaps = listSwaps();
   </head>
   <body>
     <nav aria-label="site">
-      <a href="/">Swap board</a>
+      <span class="brand">Swap board</span>
       <a href="/readme/">About</a>
     </nav>
     <main>
       <h1>Tutorial &amp; lab swap board</h1>
-      <p>
+      <p class="lede">
         Post the tutorial or lab slot you have and what you'd swap it for.
         Anyone else can claim it — once claimed, it's off the board for
         everyone else. New and claimed swaps appear live in every open tab.
       </p>
-      <form method="post" action="/api/swaps">
-        <label for="name">Your name</label>
-        <input id="name" name="name" required maxlength="100" />
-        <label for="have">Slot you have</label>
-        <input
-          id="have"
-          name="have"
-          required
-          maxlength="200"
-          placeholder="COMP1100 Tut, Wed 10am"
-        />
-        <label for="want">Slot you want</label>
-        <input
-          id="want"
-          name="want"
-          required
-          maxlength="200"
-          placeholder="Anything Thursday"
-        />
-        <button>Post swap</button>
+
+      <datalist id="course-options">
+        {COURSES.map((course) => <option value={courseLabel(course)} />)}
+      </datalist>
+
+      <form method="post" action="/api/swaps" class="swap-form" id="swap-form">
+        <div class="field">
+          <label for="name">Your name</label>
+          <input id="name" name="name" required maxlength="100" />
+        </div>
+
+        <fieldset class="picker" data-picker="have">
+          <legend>You have</legend>
+          <div class="field">
+            <label for="have-course">Course</label>
+            <input
+              id="have-course"
+              list="course-options"
+              autocomplete="off"
+              placeholder="Search for a course…"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="have-tutorial">Tutorial</label>
+            <select id="have-tutorial" disabled>
+              <option value="">Choose a course first</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="have-timeslot">Timeslot</label>
+            <select id="have-timeslot" name="have" required disabled>
+              <option value="">Choose a tutorial first</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <fieldset class="picker" data-picker="want">
+          <legend>You want</legend>
+          <div class="field">
+            <label for="want-course">Course</label>
+            <input
+              id="want-course"
+              list="course-options"
+              autocomplete="off"
+              placeholder="Search for a course…"
+              required
+            />
+          </div>
+          <div class="field">
+            <label for="want-tutorial">Tutorial</label>
+            <select id="want-tutorial" disabled>
+              <option value="">Choose a course first</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="want-timeslot">Timeslot</label>
+            <select id="want-timeslot" name="want" required disabled>
+              <option value="">Choose a tutorial first</option>
+            </select>
+          </div>
+        </fieldset>
+
+        <button class="submit">Post swap</button>
       </form>
+
       <ul id="swaps">
         {
           swaps.map((swap) => (
-            <li data-swap-id={swap.id}>
-              <p>
+            <li data-swap-id={swap.id} class="swap-card">
+              <p class="swap-summary">
                 <strong>{swap.name}</strong> has {swap.have} — wants {swap.want}
               </p>
               {swap.claimedBy ? (
                 <p class="claimed">claimed by {swap.claimedBy}</p>
               ) : (
-                <form method="post" action={`/api/swaps/${swap.id}/claim`}>
+                <form method="post" action={`/api/swaps/${swap.id}/claim`} class="claim-form">
                   <label for={`claim-${swap.id}`}>Your name</label>
                   <input
                     id={`claim-${swap.id}`}
@@ -72,6 +118,14 @@ const swaps = listSwaps();
       </ul>
     </main>
     <script>
+      import {
+        findCourse,
+        findTutorial,
+        upcomingSlots,
+        slotLabel,
+        type Course,
+      } from "../lib/catalog";
+
       // The live half of the demo: subscribe to the SSE stream and update the
       // board as swaps are posted or claimed. Each form itself needs none of
       // this — its POST + redirect re-renders the submitting tab from
@@ -86,9 +140,11 @@ const swaps = listSwaps();
         claimedBy: string | null;
       }) {
         const item = document.createElement("li");
+        item.className = "swap-card";
         item.dataset.swapId = String(swap.id);
 
         const summary = document.createElement("p");
+        summary.className = "swap-summary";
         const name = document.createElement("strong");
         name.textContent = swap.name;
         summary.append(name, ` has ${swap.have} — wants ${swap.want}`);
@@ -101,6 +157,7 @@ const swaps = listSwaps();
           item.append(claimed);
         } else {
           const form = document.createElement("form");
+          form.className = "claim-form";
           form.method = "post";
           form.action = `/api/swaps/${swap.id}/claim`;
 
@@ -135,6 +192,97 @@ const swaps = listSwaps();
           list?.prepend(rendered);
         }
       });
+
+      // Course → tutorial → timeslot cascade. Two independent copies, one for
+      // "have" and one for "want" — same catalog, wired the same way. The
+      // timeslot <select> is the only element with a `name`; its option
+      // values are the composed strings the backend actually stores, so the
+      // rest of the app never needs to know the catalog exists.
+      function wirePicker(prefix: "have" | "want") {
+        const courseInput = document.querySelector<HTMLInputElement>(
+          `#${prefix}-course`,
+        );
+        const tutorialSelect = document.querySelector<HTMLSelectElement>(
+          `#${prefix}-tutorial`,
+        );
+        const timeslotSelect = document.querySelector<HTMLSelectElement>(
+          `#${prefix}-timeslot`,
+        );
+        if (!courseInput || !tutorialSelect || !timeslotSelect) return;
+
+        let course: Course | undefined;
+
+        function resetTimeslot(placeholder: string) {
+          timeslotSelect!.innerHTML = "";
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = placeholder;
+          timeslotSelect!.append(option);
+          timeslotSelect!.disabled = true;
+        }
+
+        function resetTutorial(placeholder: string) {
+          tutorialSelect!.innerHTML = "";
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = placeholder;
+          tutorialSelect!.append(option);
+          tutorialSelect!.disabled = true;
+          resetTimeslot("Choose a tutorial first");
+        }
+
+        courseInput.addEventListener("input", () => {
+          const matched = findCourse(courseInput.value);
+          if (!matched) {
+            course = undefined;
+            resetTutorial("Choose a course first");
+            return;
+          }
+          course = matched;
+          tutorialSelect!.innerHTML = "";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Choose a tutorial";
+          tutorialSelect!.append(placeholder);
+          for (const tutorial of matched.tutorials) {
+            const option = document.createElement("option");
+            option.value = tutorial.name;
+            option.textContent = `${tutorial.name} (${
+              ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][tutorial.day]
+            } ${tutorial.start}–${tutorial.end})`;
+            tutorialSelect!.append(option);
+          }
+          tutorialSelect!.disabled = false;
+          resetTimeslot("Choose a tutorial first");
+        });
+
+        tutorialSelect.addEventListener("change", () => {
+          if (!course || !tutorialSelect!.value) {
+            resetTimeslot("Choose a tutorial first");
+            return;
+          }
+          const tutorial = findTutorial(course, tutorialSelect!.value);
+          if (!tutorial) {
+            resetTimeslot("Choose a tutorial first");
+            return;
+          }
+          timeslotSelect!.innerHTML = "";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Choose a timeslot";
+          timeslotSelect!.append(placeholder);
+          for (const slot of upcomingSlots(tutorial)) {
+            const option = document.createElement("option");
+            option.value = slotLabel(course, tutorial, slot);
+            option.textContent = `${slot.value}, ${tutorial.start}–${tutorial.end}`;
+            timeslotSelect!.append(option);
+          }
+          timeslotSelect!.disabled = false;
+        });
+      }
+
+      wirePicker("have");
+      wirePicker("want");
     </script>
   </body>
 </html>

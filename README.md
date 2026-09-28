@@ -16,8 +16,11 @@ over HTTP and checks a posted swap persists and a claim persists, and
 (`WHERE claimed_by IS NULL`), so two people claiming the same swap at the
 same moment can't both win.
 
-What's a judgement call, not a check: I kept it to one open list rather than
-building accounts, matching by course code, or letting a poster retract a
-swap — the smallest thing that's genuinely wired end to end (create, claim,
-persist, broadcast live to every open tab) beats a bigger half-built one.
-`CLAUDE.md` has the working rules this was built under.
+What's a judgement call, not a check: posting picks a course, tutorial and
+timeslot from a catalog (`src/lib/catalog.ts`) instead of free text, so two
+swaps for "the same slot" are actually comparable — but the catalog is dummy
+data, not the real ANU timetable, and wiring that up is future scope, not this
+crit's. I kept it to one open list rather than building accounts or letting a
+poster retract a swap — the smallest thing that's genuinely wired end to end
+(create, claim, persist, broadcast live to every open tab) beats a bigger
+half-built one. `CLAUDE.md` has the working rules this was built under.
