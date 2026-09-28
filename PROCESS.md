@@ -51,6 +51,19 @@ posted swap persists across a reload, and a claim persists too.
 `pnpm check` is green: typecheck, build, and the full spec suite, including
 the shipped invariants and the new spec tests.
 
+After shipping, I went back and replaced the have/want free-text fields with a
+cascading course → tutorial → timeslot picker
+([`e28eb60`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/e28eb60)),
+backed by a dummy catalog spanning five subjects (COMP, ENGN, ARTV, EMSC,
+HIST), plus a restyle and dropping the top-left brand link. The backend
+contract didn't change — the picker still ends in a single `<select>` whose
+option values are the same composed text `have`/`want` always were, so
+`spec/swaps.test.ts` needed no changes — but I didn't just trust that from
+reading the code: I drove the built server with a real headless Chrome,
+filled the cascade, watched the tutorial and timeslot dropdowns actually
+populate from the selected course, submitted, and confirmed the posted swap
+still showed the composed text after reload.
+
 ## Before you ship
 
 `pnpm check:evidence` verifies that this comment is gone, that your citations
