@@ -25,240 +25,133 @@ export type Course = {
   tutorials: Tutorial[];
 };
 
+// A tutorial's weekly sessions, one per day it meets, all at the same time —
+// picking a course's tutorial almost never means picking a single weekly
+// slot, so most tutorials below meet close to daily. `days` is 1 (Mon) to 5
+// (Fri); every tutorial gets at least 3.
+function weekly(days: number[], start: string, end: string): Session[] {
+  return days.map((day) => ({ day, start, end }));
+}
+
 export const COURSES: Course[] = [
   {
     code: "COMP1100",
     title: "Introduction to Programming",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 1, start: "10:00", end: "11:00" },
-          { day: 3, start: "10:00", end: "11:00" },
-          { day: 4, start: "10:00", end: "11:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [
-          { day: 2, start: "14:00", end: "15:00" },
-          { day: 4, start: "14:00", end: "15:00" },
-        ],
-      },
-      {
-        name: "Tutorial C",
-        sessions: [
-          { day: 1, start: "09:00", end: "10:00" },
-          { day: 5, start: "09:00", end: "10:00" },
-        ],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "10:00", "11:00") },
+      { name: "Tutorial B", sessions: weekly([1, 2, 3, 4, 5], "14:00", "15:00") },
+      { name: "Tutorial C", sessions: weekly([1, 3, 5], "09:00", "10:00") },
     ],
   },
   {
     code: "COMP2100",
     title: "Software Design Methodologies",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 2, start: "11:00", end: "12:00" },
-          { day: 4, start: "11:00", end: "12:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [{ day: 3, start: "15:00", end: "16:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "11:00", "12:00") },
+      { name: "Tutorial B", sessions: weekly([1, 2, 3, 4], "15:00", "16:00") },
     ],
   },
   {
     code: "COMP3600",
     title: "Algorithms",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 1, start: "13:00", end: "14:00" },
-          { day: 3, start: "13:00", end: "14:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [{ day: 5, start: "16:00", end: "17:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "13:00", "14:00") },
+      { name: "Tutorial B", sessions: weekly([2, 4, 5], "16:00", "17:00") },
     ],
   },
   {
     code: "COMP4020",
     title: "Agentic Coding Studio",
     tutorials: [
-      {
-        name: "Studio",
-        sessions: [{ day: 1, start: "15:30", end: "17:00" }],
-      },
+      { name: "Studio", sessions: weekly([1, 3, 5], "15:30", "17:00") },
     ],
   },
   {
     code: "ENGN2225",
     title: "Mechanics of Solids",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 2, start: "09:00", end: "10:00" },
-          { day: 4, start: "09:00", end: "10:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [{ day: 5, start: "10:00", end: "11:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "09:00", "10:00") },
+      { name: "Tutorial B", sessions: weekly([1, 2, 4, 5], "10:00", "11:00") },
     ],
   },
   {
     code: "ENGN3213",
     title: "Signals and Systems",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 3, start: "11:00", end: "12:00" },
-          { day: 5, start: "11:00", end: "12:00" },
-        ],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "11:00", "12:00") },
     ],
   },
   {
     code: "ENGN4200",
     title: "Engineering Design",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 1, start: "09:00", end: "11:00" },
-          { day: 2, start: "09:00", end: "11:00" },
-        ],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "09:00", "11:00") },
     ],
   },
   {
     code: "ARTV1002",
     title: "Introduction to Photography",
     tutorials: [
-      {
-        name: "Studio A",
-        sessions: [
-          { day: 2, start: "13:00", end: "15:00" },
-          { day: 4, start: "13:00", end: "15:00" },
-        ],
-      },
-      {
-        name: "Studio B",
-        sessions: [{ day: 5, start: "13:00", end: "15:00" }],
-      },
+      { name: "Studio A", sessions: weekly([1, 2, 3, 4, 5], "13:00", "15:00") },
+      { name: "Studio B", sessions: weekly([1, 3, 5], "13:00", "15:00") },
     ],
   },
   {
     code: "ARTV2107",
     title: "Digital Media Practices",
     tutorials: [
-      {
-        name: "Studio A",
-        sessions: [
-          { day: 3, start: "09:00", end: "11:00" },
-          { day: 4, start: "09:00", end: "11:00" },
-        ],
-      },
+      { name: "Studio A", sessions: weekly([1, 2, 3, 4], "09:00", "11:00") },
     ],
   },
   {
     code: "ARTV3110",
     title: "Sculpture Studio",
     tutorials: [
-      {
-        name: "Studio A",
-        sessions: [{ day: 5, start: "10:00", end: "12:00" }],
-      },
+      { name: "Studio A", sessions: weekly([1, 3, 5], "10:00", "12:00") },
     ],
   },
   {
     code: "EMSC1006",
     title: "Introduction to Earth Sciences",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 1, start: "11:00", end: "12:00" },
-          { day: 3, start: "11:00", end: "12:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [{ day: 4, start: "10:00", end: "11:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "11:00", "12:00") },
+      { name: "Tutorial B", sessions: weekly([1, 2, 4, 5], "10:00", "11:00") },
     ],
   },
   {
     code: "EMSC2019",
     title: "Structural Geology",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 2, start: "14:00", end: "16:00" },
-          { day: 5, start: "14:00", end: "16:00" },
-        ],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "14:00", "16:00") },
     ],
   },
   {
     code: "EMSC3025",
     title: "Environmental Hazards",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [{ day: 4, start: "09:00", end: "10:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 3, 5], "09:00", "10:00") },
     ],
   },
   {
     code: "HIST1002",
     title: "Ideas that Made the World",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 2, start: "10:00", end: "11:00" },
-          { day: 4, start: "10:00", end: "11:00" },
-        ],
-      },
-      {
-        name: "Tutorial B",
-        sessions: [{ day: 5, start: "11:00", end: "12:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "10:00", "11:00") },
+      { name: "Tutorial B", sessions: weekly([1, 2, 4, 5], "11:00", "12:00") },
     ],
   },
   {
     code: "HIST2038",
     title: "Modern Australia",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [
-          { day: 3, start: "15:00", end: "16:00" },
-          { day: 5, start: "15:00", end: "16:00" },
-        ],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 2, 3, 4, 5], "15:00", "16:00") },
     ],
   },
   {
     code: "HIST3041",
     title: "History of Science",
     tutorials: [
-      {
-        name: "Tutorial A",
-        sessions: [{ day: 4, start: "11:00", end: "12:00" }],
-      },
+      { name: "Tutorial A", sessions: weekly([1, 3, 5], "11:00", "12:00") },
     ],
   },
 ];
