@@ -64,6 +64,22 @@ filled the cascade, watched the tutorial and timeslot dropdowns actually
 populate from the selected course, submitted, and confirmed the posted swap
 still showed the composed text after reload.
 
+Looking at that redesign again, it had two bugs of the same shape: the
+tutorial dropdown's option labels repeated the day/time the timeslot dropdown
+already showed, and the have/want sides let you pick a different course and
+tutorial for each, when a real swap never crosses those — you're enrolled in
+one specific section and want a different dated session of it, not a
+different course
+([`3a75cd8`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/3a75cd8)).
+Fixed both: one shared course+tutorial picker feeding two timeslot selects
+(have/want), tutorial options now show just the name, and picking a timeslot
+on one side disables it on the other so the same dated session can't be
+offered and requested at once. Re-verified the same way — built server, real
+headless Chrome — confirming the tutorial dropdown now shows plain names, both
+timeslot dropdowns populate from the one selected tutorial, the mutual
+exclusion actually disables the taken option, and the posted card still reads
+correctly after reload.
+
 ## Before you ship
 
 `pnpm check:evidence` verifies that this comment is gone, that your citations
