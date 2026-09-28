@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { claimSwap } from "../../../../lib/db";
 import { bus } from "../../../../lib/events";
+import { normalizeUniId } from "../../../../lib/uniId";
 
 // Claims an open swap: sets claimed_by if (and only if) nobody's claimed it
 // yet (see the WHERE guard in claimSwap), broadcasts the updated row so
@@ -9,9 +10,9 @@ import { bus } from "../../../../lib/events";
 export const POST: APIRoute = async ({ params, request, redirect }) => {
   const id = Number(params.id);
   const form = await request.formData();
-  const claimedBy = String(form.get("claimedBy") ?? "").trim();
+  const claimedBy = normalizeUniId(String(form.get("claimedBy") ?? ""));
   if (Number.isInteger(id) && claimedBy) {
-    const swap = claimSwap(id, claimedBy.slice(0, 100));
+    const swap = claimSwap(id, claimedBy);
     if (swap) bus.emit("swap", swap);
   }
   return redirect("/", 303);

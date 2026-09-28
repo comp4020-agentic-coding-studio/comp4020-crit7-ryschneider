@@ -30,7 +30,7 @@ describe("swap board", () => {
   it("accepts a new swap and redirects back to the board", async () => {
     const res = await post(
       "/api/swaps",
-      new URLSearchParams({ name: "spec-poster", have, want }),
+      new URLSearchParams({ name: "u1000001", have, want }),
     );
     expect(res.status).toBe(303);
     expect(res.headers.get("location")).toBe("/");
@@ -56,7 +56,7 @@ describe("swap board", () => {
 
     await post(
       "/api/swaps",
-      new URLSearchParams({ name: "live-poster", have: liveHave, want: liveWant }),
+      new URLSearchParams({ name: "u1000002", have: liveHave, want: liveWant }),
     );
 
     const decoder = new TextDecoder();
@@ -83,12 +83,12 @@ describe("swap board", () => {
 
     const res = await post(
       `/api/swaps/${id}/claim`,
-      new URLSearchParams({ claimedBy: "spec-claimer" }),
+      new URLSearchParams({ claimedBy: "u1000003" }),
     );
     expect(res.status).toBe(303);
 
     const after = await fetch(baseUrl);
     const afterHtml = await after.text();
-    expect(afterHtml).toContain("claimed by spec-claimer");
+    expect(afterHtml).toContain("claimed by u1000003");
   });
 });

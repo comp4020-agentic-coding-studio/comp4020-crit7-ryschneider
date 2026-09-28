@@ -1,6 +1,7 @@
 import type { APIRoute } from "astro";
 import { addSwap } from "../../lib/db";
 import { bus } from "../../lib/events";
+import { normalizeUniId } from "../../lib/uniId";
 
 // A plain HTML form POSTs here, the swap request goes into SQLite, and the
 // new row is broadcast to every open SSE connection. The 303 redirect makes
@@ -9,11 +10,11 @@ import { bus } from "../../lib/events";
 // stream.
 export const POST: APIRoute = async ({ request, redirect }) => {
   const form = await request.formData();
-  const name = String(form.get("name") ?? "").trim();
+  const name = normalizeUniId(String(form.get("name") ?? ""));
   const have = String(form.get("have") ?? "").trim();
   const want = String(form.get("want") ?? "").trim();
   if (name && have && want) {
-    bus.emit("swap", addSwap(name.slice(0, 100), have.slice(0, 200), want.slice(0, 200)));
+    bus.emit("swap", addSwap(name, have.slice(0, 200), want.slice(0, 200)));
   }
   return redirect("/", 303);
 };

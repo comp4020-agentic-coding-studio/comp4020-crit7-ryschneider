@@ -1,6 +1,7 @@
 ---
 import { listSwaps } from "../lib/db";
 import { COURSES, courseLabel } from "../lib/catalog";
+import { UNI_ID_INPUT_PATTERN } from "../lib/uniId";
 import "../styles.css";
 
 const swaps = listSwaps();
@@ -32,8 +33,16 @@ const swaps = listSwaps();
 
       <form method="post" action="/api/swaps" class="swap-form" id="swap-form">
         <div class="field">
-          <label for="name">Your name</label>
-          <input id="name" name="name" required maxlength="100" />
+          <label for="name">Uni ID</label>
+          <input
+            id="name"
+            name="name"
+            required
+            maxlength="8"
+            pattern={UNI_ID_INPUT_PATTERN}
+            placeholder="u7509543"
+            title="Uni ID, e.g. u7509543"
+          />
         </div>
 
         <fieldset class="picker">
@@ -86,12 +95,15 @@ const swaps = listSwaps();
                 <p class="claimed">claimed by {swap.claimedBy}</p>
               ) : (
                 <form method="post" action={`/api/swaps/${swap.id}/claim`} class="claim-form">
-                  <label for={`claim-${swap.id}`}>Your name</label>
+                  <label for={`claim-${swap.id}`}>Uni ID</label>
                   <input
                     id={`claim-${swap.id}`}
                     name="claimedBy"
                     required
-                    maxlength="100"
+                    maxlength="8"
+                    pattern={UNI_ID_INPUT_PATTERN}
+                    placeholder="u7509543"
+                    title="Uni ID, e.g. u7509543"
                   />
                   <button>Claim</button>
                 </form>
@@ -109,6 +121,7 @@ const swaps = listSwaps();
         slotLabel,
         type Course,
       } from "../lib/catalog";
+      import { UNI_ID_INPUT_PATTERN } from "../lib/uniId";
 
       // The live half of the demo: subscribe to the SSE stream and update the
       // board as swaps are posted or claimed. Each form itself needs none of
@@ -147,13 +160,16 @@ const swaps = listSwaps();
 
           const label = document.createElement("label");
           label.htmlFor = `claim-${swap.id}`;
-          label.textContent = "Your name";
+          label.textContent = "Uni ID";
 
           const input = document.createElement("input");
           input.id = `claim-${swap.id}`;
           input.name = "claimedBy";
           input.required = true;
-          input.maxLength = 100;
+          input.maxLength = 8;
+          input.pattern = UNI_ID_INPUT_PATTERN;
+          input.placeholder = "u7509543";
+          input.title = "Uni ID, e.g. u7509543";
 
           const button = document.createElement("button");
           button.textContent = "Claim";
