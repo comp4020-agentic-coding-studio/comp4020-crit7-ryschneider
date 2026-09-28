@@ -36,12 +36,12 @@ const swaps = listSwaps();
           <input id="name" name="name" required maxlength="100" />
         </div>
 
-        <fieldset class="picker" data-picker="have">
-          <legend>You have</legend>
+        <fieldset class="picker">
+          <legend>Your tutorial</legend>
           <div class="field">
-            <label for="have-course">Course</label>
+            <label for="course">Course</label>
             <input
-              id="have-course"
+              id="course"
               list="course-options"
               autocomplete="off"
               placeholder="Search for a course…"
@@ -49,39 +49,23 @@ const swaps = listSwaps();
             />
           </div>
           <div class="field">
-            <label for="have-tutorial">Tutorial</label>
-            <select id="have-tutorial" disabled>
+            <label for="tutorial">Tutorial</label>
+            <select id="tutorial" disabled>
               <option value="">Choose a course first</option>
-            </select>
-          </div>
-          <div class="field">
-            <label for="have-timeslot">Timeslot</label>
-            <select id="have-timeslot" name="have" required disabled>
-              <option value="">Choose a tutorial first</option>
             </select>
           </div>
         </fieldset>
 
-        <fieldset class="picker" data-picker="want">
-          <legend>You want</legend>
+        <fieldset class="picker timeslots">
+          <legend>Swap</legend>
           <div class="field">
-            <label for="want-course">Course</label>
-            <input
-              id="want-course"
-              list="course-options"
-              autocomplete="off"
-              placeholder="Search for a course…"
-              required
-            />
-          </div>
-          <div class="field">
-            <label for="want-tutorial">Tutorial</label>
-            <select id="want-tutorial" disabled>
-              <option value="">Choose a course first</option>
+            <label for="have-timeslot">You have</label>
+            <select id="have-timeslot" name="have" required disabled>
+              <option value="">Choose a tutorial first</option>
             </select>
           </div>
           <div class="field">
-            <label for="want-timeslot">Timeslot</label>
+            <label for="want-timeslot">You want</label>
             <select id="want-timeslot" name="want" required disabled>
               <option value="">Choose a tutorial first</option>
             </select>
@@ -193,32 +177,36 @@ const swaps = listSwaps();
         }
       });
 
-      // Course → tutorial → timeslot cascade. Two independent copies, one for
-      // "have" and one for "want" — same catalog, wired the same way. The
-      // timeslot <select> is the only element with a `name`; its option
-      // values are the composed strings the backend actually stores, so the
-      // rest of the app never needs to know the catalog exists.
-      function wirePicker(prefix: "have" | "want") {
-        const courseInput = document.querySelector<HTMLInputElement>(
-          `#${prefix}-course`,
-        );
-        const tutorialSelect = document.querySelector<HTMLSelectElement>(
-          `#${prefix}-tutorial`,
-        );
-        const timeslotSelect = document.querySelector<HTMLSelectElement>(
-          `#${prefix}-timeslot`,
-        );
-        if (!courseInput || !tutorialSelect || !timeslotSelect) return;
+      // Course → tutorial cascade, chosen ONCE: a swap is between two
+      // timeslots of the same tutorial, not between two different courses or
+      // tutorials, so there's a single course input and a single tutorial
+      // select feeding both timeslot selects below. The tutorial select's
+      // options are just names — the day/time they meet is fixed per
+      // tutorial and shown only once a specific dated timeslot is chosen, not
+      // repeated on every tutorial option. Both timeslot <select>s carry a
+      // `name` (`have`/`want`); their option values are the composed strings
+      // the backend actually stores, so the rest of the app never needs to
+      // know the catalog exists.
+      const courseInput = document.querySelector<HTMLInputElement>("#course");
+      const tutorialSelect =
+        document.querySelector<HTMLSelectElement>("#tutorial");
+      const haveSelect =
+        document.querySelector<HTMLSelectElement>("#have-timeslot");
+      const wantSelect =
+        document.querySelector<HTMLSelectElement>("#want-timeslot");
 
+      if (courseInput && tutorialSelect && haveSelect && wantSelect) {
         let course: Course | undefined;
 
-        function resetTimeslot(placeholder: string) {
-          timeslotSelect!.innerHTML = "";
-          const option = document.createElement("option");
-          option.value = "";
-          option.textContent = placeholder;
-          timeslotSelect!.append(option);
-          timeslotSelect!.disabled = true;
+        function resetTimeslots(placeholder: string) {
+          for (const select of [haveSelect, wantSelect]) {
+            select!.innerHTML = "";
+            const option = document.createElement("option");
+            option.value = "";
+            option.textContent = placeholder;
+            select!.append(option);
+            select!.disabled = true;
+          }
         }
 
         function resetTutorial(placeholder: string) {
@@ -228,7 +216,18 @@ const swaps = listSwaps();
           option.textContent = placeholder;
           tutorialSelect!.append(option);
           tutorialSelect!.disabled = true;
-          resetTimeslot("Choose a tutorial first");
+          resetTimeslots("Choose a tutorial first");
+        }
+
+        // A student can't offer and request the same dated timeslot, so
+        // picking one on either side removes it from the other's options.
+        function excludeFrom(source: HTMLSelectElement, other: HTMLSelectElement) {
+          for (const opt of Array.from(other.options)) {
+            opt.disabled = opt.value !== "" && opt.value === source.value;
+          }
+          if (other.value && other.value === source.value) {
+            other.value = "";
+          }
         }
 
         courseInput.addEventListener("input", () => {
@@ -247,42 +246,43 @@ const swaps = listSwaps();
           for (const tutorial of matched.tutorials) {
             const option = document.createElement("option");
             option.value = tutorial.name;
-            option.textContent = `${tutorial.name} (${
-              ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"][tutorial.day]
-            } ${tutorial.start}–${tutorial.end})`;
+            option.textContent = tutorial.name;
             tutorialSelect!.append(option);
           }
           tutorialSelect!.disabled = false;
-          resetTimeslot("Choose a tutorial first");
+          resetTimeslots("Choose a tutorial first");
         });
 
         tutorialSelect.addEventListener("change", () => {
           if (!course || !tutorialSelect!.value) {
-            resetTimeslot("Choose a tutorial first");
+            resetTimeslots("Choose a tutorial first");
             return;
           }
           const tutorial = findTutorial(course, tutorialSelect!.value);
           if (!tutorial) {
-            resetTimeslot("Choose a tutorial first");
+            resetTimeslots("Choose a tutorial first");
             return;
           }
-          timeslotSelect!.innerHTML = "";
-          const placeholder = document.createElement("option");
-          placeholder.value = "";
-          placeholder.textContent = "Choose a timeslot";
-          timeslotSelect!.append(placeholder);
-          for (const slot of upcomingSlots(tutorial)) {
-            const option = document.createElement("option");
-            option.value = slotLabel(course, tutorial, slot);
-            option.textContent = `${slot.value}, ${tutorial.start}–${tutorial.end}`;
-            timeslotSelect!.append(option);
+          const slots = upcomingSlots(tutorial);
+          for (const select of [haveSelect, wantSelect]) {
+            select!.innerHTML = "";
+            const placeholder = document.createElement("option");
+            placeholder.value = "";
+            placeholder.textContent = "Choose a timeslot";
+            select!.append(placeholder);
+            for (const slot of slots) {
+              const option = document.createElement("option");
+              option.value = slotLabel(course, tutorial, slot);
+              option.textContent = `${slot.value}, ${tutorial.start}–${tutorial.end}`;
+              select!.append(option);
+            }
+            select!.disabled = false;
           }
-          timeslotSelect!.disabled = false;
         });
-      }
 
-      wirePicker("have");
-      wirePicker("want");
+        haveSelect.addEventListener("change", () => excludeFrom(haveSelect!, wantSelect!));
+        wantSelect.addEventListener("change", () => excludeFrom(wantSelect!, haveSelect!));
+      }
     </script>
   </body>
 </html>
