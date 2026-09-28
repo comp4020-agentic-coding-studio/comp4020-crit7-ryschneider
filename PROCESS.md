@@ -80,6 +80,35 @@ timeslot dropdowns populate from the one selected tutorial, the mutual
 exclusion actually disables the taken option, and the posted card still reads
 correctly after reload.
 
+Feedback afterwards asked for two more changes, each its own commit rather
+than folded together even though both touch `index.astro`.
+
+First, requiring a uni ID (`u` followed by 7 digits, e.g. `u7509543`) instead
+of a free-text name everywhere a name is entered — the posting form, every
+claim form, both server-rendered and the one `renderSwap` builds for live SSE
+updates
+([`4576813`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/4576813)).
+Validation is client-side (an `<input pattern>`, spelled out as
+`[uU]\d{7}` since the attribute takes no regex flags) and server-side
+(`normalizeUniId`, lower-casing and rejecting anything that doesn't match).
+Checked with a real headless Chrome: typing `bob` into the field fails
+`checkValidity()`, typing `u7509543` passes, and the full post → claim flow
+round-trips a uni ID through the database and back out correctly.
+
+Second, restricting a swap to two sessions of the same tutorial in the same
+week, since a tutorial can meet on more than one weekday (e.g. Mon/Wed/Thu)
+and a real swap never crosses a week boundary
+([`94e2598`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/94e2598)).
+The catalog's `Tutorial` now holds a list of weekday `sessions` rather than a
+single day/time, and a new `Week 1`–`12` selector (real date ranges off a
+semester start date) sits between the tutorial and timeslot pickers; picking
+a week dates that tutorial's sessions into it, and only then do the have/want
+selects populate. Verified the same way as the earlier picker work — built
+server, headless Chrome — driving the cascade through course → tutorial →
+week and confirming the have/want options showed the right dated weekdays
+(e.g. `Mon, 3 Aug` / `Wed, 5 Aug` for week 3), that the composed text posted
+and persisted correctly, and that claiming still worked end to end.
+
 ## Before you ship
 
 `pnpm check:evidence` verifies that this comment is gone, that your citations
