@@ -63,6 +63,12 @@ const swaps = listSwaps();
               <option value="">Choose a course first</option>
             </select>
           </div>
+          <div class="field">
+            <label for="week">Week</label>
+            <select id="week" disabled>
+              <option value="">Choose a tutorial first</option>
+            </select>
+          </div>
         </fieldset>
 
         <fieldset class="picker timeslots">
@@ -70,13 +76,13 @@ const swaps = listSwaps();
           <div class="field">
             <label for="have-timeslot">You have</label>
             <select id="have-timeslot" name="have" required disabled>
-              <option value="">Choose a tutorial first</option>
+              <option value="">Choose a week first</option>
             </select>
           </div>
           <div class="field">
             <label for="want-timeslot">You want</label>
             <select id="want-timeslot" name="want" required disabled>
-              <option value="">Choose a tutorial first</option>
+              <option value="">Choose a week first</option>
             </select>
           </div>
         </fieldset>
@@ -117,9 +123,13 @@ const swaps = listSwaps();
       import {
         findCourse,
         findTutorial,
-        upcomingSlots,
+        findWeek,
+        weekLabel,
+        weekSessions,
+        WEEKS,
         slotLabel,
         type Course,
+        type Tutorial,
       } from "../lib/catalog";
       import { UNI_ID_INPUT_PATTERN } from "../lib/uniId";
 
@@ -193,26 +203,28 @@ const swaps = listSwaps();
         }
       });
 
-      // Course → tutorial cascade, chosen ONCE: a swap is between two
-      // timeslots of the same tutorial, not between two different courses or
-      // tutorials, so there's a single course input and a single tutorial
-      // select feeding both timeslot selects below. The tutorial select's
-      // options are just names — the day/time they meet is fixed per
-      // tutorial and shown only once a specific dated timeslot is chosen, not
-      // repeated on every tutorial option. Both timeslot <select>s carry a
-      // `name` (`have`/`want`); their option values are the composed strings
-      // the backend actually stores, so the rest of the app never needs to
-      // know the catalog exists.
+      // Course → tutorial → week → timeslot cascade, all chosen ONCE: a swap
+      // is between two sessions of the same tutorial in the same week, not
+      // between different courses, tutorials or weeks, so a single course
+      // input, tutorial select and week select feed both timeslot selects
+      // below. A tutorial's timeslots are just its weekday sessions dated
+      // into the chosen week (e.g. Mon/Wed/Thu), so they can't be shown
+      // until a week is picked. Both timeslot <select>s carry a `name`
+      // (`have`/`want`); their option values are the composed strings the
+      // backend actually stores, so the rest of the app never needs to know
+      // the catalog exists.
       const courseInput = document.querySelector<HTMLInputElement>("#course");
       const tutorialSelect =
         document.querySelector<HTMLSelectElement>("#tutorial");
+      const weekSelect = document.querySelector<HTMLSelectElement>("#week");
       const haveSelect =
         document.querySelector<HTMLSelectElement>("#have-timeslot");
       const wantSelect =
         document.querySelector<HTMLSelectElement>("#want-timeslot");
 
-      if (courseInput && tutorialSelect && haveSelect && wantSelect) {
+      if (courseInput && tutorialSelect && weekSelect && haveSelect && wantSelect) {
         let course: Course | undefined;
+        let tutorial: Tutorial | undefined;
 
         function resetTimeslots(placeholder: string) {
           for (const select of [haveSelect, wantSelect]) {
@@ -225,6 +237,16 @@ const swaps = listSwaps();
           }
         }
 
+        function resetWeek(placeholder: string) {
+          weekSelect!.innerHTML = "";
+          const option = document.createElement("option");
+          option.value = "";
+          option.textContent = placeholder;
+          weekSelect!.append(option);
+          weekSelect!.disabled = true;
+          resetTimeslots("Choose a week first");
+        }
+
         function resetTutorial(placeholder: string) {
           tutorialSelect!.innerHTML = "";
           const option = document.createElement("option");
@@ -232,7 +254,7 @@ const swaps = listSwaps();
           option.textContent = placeholder;
           tutorialSelect!.append(option);
           tutorialSelect!.disabled = true;
-          resetTimeslots("Choose a tutorial first");
+          resetWeek("Choose a tutorial first");
         }
 
         // A student can't offer and request the same dated timeslot, so
@@ -259,27 +281,55 @@ const swaps = listSwaps();
           placeholder.value = "";
           placeholder.textContent = "Choose a tutorial";
           tutorialSelect!.append(placeholder);
-          for (const tutorial of matched.tutorials) {
+          for (const t of matched.tutorials) {
             const option = document.createElement("option");
-            option.value = tutorial.name;
-            option.textContent = tutorial.name;
+            option.value = t.name;
+            option.textContent = t.name;
             tutorialSelect!.append(option);
           }
           tutorialSelect!.disabled = false;
-          resetTimeslots("Choose a tutorial first");
+          resetWeek("Choose a tutorial first");
         });
 
         tutorialSelect.addEventListener("change", () => {
           if (!course || !tutorialSelect!.value) {
-            resetTimeslots("Choose a tutorial first");
+            tutorial = undefined;
+            resetWeek("Choose a tutorial first");
             return;
           }
-          const tutorial = findTutorial(course, tutorialSelect!.value);
-          if (!tutorial) {
-            resetTimeslots("Choose a tutorial first");
+          const matched = findTutorial(course, tutorialSelect!.value);
+          if (!matched) {
+            tutorial = undefined;
+            resetWeek("Choose a tutorial first");
             return;
           }
-          const slots = upcomingSlots(tutorial);
+          tutorial = matched;
+          weekSelect!.innerHTML = "";
+          const placeholder = document.createElement("option");
+          placeholder.value = "";
+          placeholder.textContent = "Choose a week";
+          weekSelect!.append(placeholder);
+          for (const week of WEEKS) {
+            const option = document.createElement("option");
+            option.value = String(week.number);
+            option.textContent = weekLabel(week);
+            weekSelect!.append(option);
+          }
+          weekSelect!.disabled = false;
+          resetTimeslots("Choose a week first");
+        });
+
+        weekSelect.addEventListener("change", () => {
+          if (!course || !tutorial || !weekSelect!.value) {
+            resetTimeslots("Choose a week first");
+            return;
+          }
+          const week = findWeek(Number(weekSelect!.value));
+          if (!week) {
+            resetTimeslots("Choose a week first");
+            return;
+          }
+          const slots = weekSessions(tutorial, week);
           for (const select of [haveSelect, wantSelect]) {
             select!.innerHTML = "";
             const placeholder = document.createElement("option");
@@ -288,8 +338,8 @@ const swaps = listSwaps();
             select!.append(placeholder);
             for (const slot of slots) {
               const option = document.createElement("option");
-              option.value = slotLabel(course, tutorial, slot);
-              option.textContent = `${slot.value}, ${tutorial.start}–${tutorial.end}`;
+              option.value = slotLabel(course, tutorial, week, slot);
+              option.textContent = slot.value;
               select!.append(option);
             }
             select!.disabled = false;
