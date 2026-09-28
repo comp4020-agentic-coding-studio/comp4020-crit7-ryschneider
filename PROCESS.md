@@ -109,6 +109,16 @@ week and confirming the have/want options showed the right dated weekdays
 (e.g. `Mon, 3 Aug` / `Wed, 5 Aug` for week 3), that the composed text posted
 and persisted correctly, and that claiming still worked end to end.
 
+A follow-up caught that the dummy catalog itself hadn't kept up with that
+restructuring: several tutorials only had one or two sessions a week, so
+their have/want pickers were nearly empty once a week was chosen
+([`6e04115`](https://github.com/comp4020-agentic-coding-studio/comp4020-crit7-ryschneider/commit/6e04115)).
+Rewrote the catalog data through a small `weekly(days, start, end)` helper so
+every tutorial gets at least 3 sessions and most get 4-5, then re-drove the
+built server with headless Chrome against the tutorials that had been
+thinnest (COMP4020 Studio, HIST3041 Tutorial A, ARTV3110 Studio A) and
+confirmed each now offers 3+ timeslots once a week is picked.
+
 ## Before you ship
 
 `pnpm check:evidence` verifies that this comment is gone, that your citations
